@@ -50,6 +50,7 @@ void setup()
 
   Firebase.getJSON(esmart.firebaseWriteData, "/firmware");
   updateCallback(esmart.firebaseWriteData.jsonString());
+  Serial.print(WiFi.macAddress());
 }
 
 void loop()

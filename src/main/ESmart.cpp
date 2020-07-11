@@ -4,7 +4,7 @@ ESmart::ESmart(){};
 
 String ESmart::getUserId() { return USER_ID; }
 
-String ESmart::getUserPath(String id) { return "/users/" + getUserId() + "/" + id; }
+String ESmart::getUserPath(String id) { return "/users/" + getUserId() + "/" + WiFi.macAddress() + "/" + id; }
 
 String ESmart::getUpdatePath() { return "/update/"; }
 
@@ -65,7 +65,7 @@ void ESmart::scheduleOff(int pin, String id)
   FirebaseJson json;
   json.set("relayState", readPin(pin - 1));
   json.set("state", readPin(pin - 1));
-  
+
   Firebase.updateNode(firebaseWriteData, getUserPath(id), json);
 }
 
@@ -162,6 +162,8 @@ void ESmart::changeRelayState(DynamicJsonDocument *const &doc)
     for (auto kv : obj)
     {
       EsmartFirebase esmartFirebase;
+      Serial.println(esmartFirebase);
+
       esmartFirebase.init(kv.key().c_str(), doc);
 
       setData(esmartFirebase);
