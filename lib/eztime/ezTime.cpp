@@ -12,17 +12,6 @@
 	#if defined(ESP8266)
 		#include <ESP8266WiFi.h>
 		#include <WiFiUdp.h>
-	#elif defined(ARDUINO_SAMD_MKR1000)
-		#include <SPI.h>
-		#include <WiFi101.h>
-		#include <WiFiUdp.h>
-	#elif defined(EZTIME_ETHERNET)
-		#include <SPI.h>
-		#include <Ethernet.h>
-		#include <EthernetUdp.h>
-	#else
-		#include <WiFi.h>
-		#include <WiFiUdp.h>
 	#endif
 #endif
 

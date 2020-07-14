@@ -2,38 +2,45 @@
 #include "ESmart.hpp"
 #include "ESmartUpdate.hpp"
 #include "Config.h"
+#include "LittleFS.h"
 
-#define EEPROM_SIZE 512
-
-#define DEBUG
-
-ESmart esmart;
 ESmartUpdate updateHelper;
+Config config;
+ESmart esmart;
 
 const int memBase = 350;
 
 void callback(StreamData data) { esmart.streamCallback(data); }
 
-void updateCallback(String data)
-{
-  updateHelper.handleUpdate(data);
-}
+void updateCallback(String data) { updateHelper.handleUpdate(data); }
 
 void setup()
 {
   Serial.begin(115200);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  delay(1000);
+  DEBUG_PRINTLN("Mounting FS...");
 
-  while (WiFi.status() != WL_CONNECTED)
+  if (config.loadConfig())
   {
-    delay(100);
+    DEBUG_PRINTLN("Config loaded");
+    WiFi.begin(config.wifiAp(), config.wifiPass());
+    while (WiFi.status() != WL_CONNECTED)
+    {
+      delay(100);
+    }
+  }
+  else
+  {
+    DEBUG_PRINTLN("Failed to load config");
+    return;
   }
 
+  esmart.setConfig(config);
   esmart.initLocalTime();
 
   updateHelper.checkForUpdate();
 
-  Firebase.begin(FIREBASE_URL, FIREBASE_KEY);
+  Firebase.begin(config.firebaseUrl(), config.firebaseKey());
   Firebase.reconnectWiFi(true);
 
   Firebase.setMaxRetry(esmart.firebaseStreamData, 10);
@@ -50,7 +57,6 @@ void setup()
 
   Firebase.getJSON(esmart.firebaseWriteData, "/firmware");
   updateCallback(esmart.firebaseWriteData.jsonString());
-  Serial.print(WiFi.macAddress());
 }
 
 void loop()

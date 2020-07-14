@@ -108,26 +108,7 @@ typedef enum {
 #define FOURTH			4
 #define LAST			5
 
-////////////////////////
-
-
 #define LEAP_YEAR(Y)	( ((1970+Y)>0) && !((1970+Y)%4) && ( ((1970+Y)%100) || !((1970+Y)%400) ) )
-
-// typedef struct  { 
-// 	uint8_t Second; 
-// 	uint8_t Minute; 
-// 	uint8_t Hour; 
-// 	uint8_t Wday;   // day of week, sunday is day 1
-// 	uint8_t Day;
-// 	uint8_t Month; 
-// 	uint8_t Year;   // offset from 1970; 
-// } tmElements_t;
-
-// typedef enum { 
-// 	timeNotSet,
-// 	timeNeedsSync,
-// 	timeSet
-// } timeStatus_t;
 
 typedef struct {
 	time_t time;

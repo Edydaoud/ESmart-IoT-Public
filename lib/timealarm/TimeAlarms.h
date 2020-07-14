@@ -4,7 +4,8 @@
 #define TimeAlarms_h
 
 #include <Arduino.h>
-#include "TimeLib.h"
+#include <TimeLib.h>
+#include "FutureJob.hpp"
 
 #if !defined(dtNBR_ALARMS)
 #if defined(__AVR__)
@@ -61,8 +62,7 @@ typedef AlarmID_t AlarmId; // Arduino friendly name
 
 extern "C"
 {
-  //typedef void (*callbackFunction)(void);
-  using OnTick_t = std::function<void(int, String)>; // <======= replace dumb function pointer by std::function
+  using OnTick_t = std::function<void(FutureJob)>;
 }
 // class defining an alarm instance, only used by dtAlarmsClass
 class AlarmClass
@@ -71,8 +71,8 @@ public:
   AlarmClass();
   OnTick_t onTickHandler;
   void updateNextTrigger();
-  String id;
   time_t value;
+  FutureJob work;
   time_t nextTrigger;
   AlarmMode_t Mode;
 };
@@ -85,85 +85,22 @@ private:
   void serviceAlarms();
   uint8_t isServicing;
   uint8_t servicedAlarmId; // the alarm currently being serviced
-  AlarmID_t create(time_t value, OnTick_t onTickHandler, uint8_t isOneShot, dtAlarmPeriod_t alarmType, int index, String id = "");
+  AlarmID_t create(time_t value, OnTick_t onTickHandler, uint8_t isOneShot, dtAlarmPeriod_t alarmType, int index, FutureJob work);
 
 public:
   TimeAlarmsClass();
-  // functions to create alarms and timers
-
-  // trigger once at the given time in the future
-  AlarmID_t triggerOnce(time_t value, OnTick_t onTickHandler)
-  {
-    if (value <= 0)
-      return dtINVALID_ALARM_ID;
-    return create(value, onTickHandler, true, dtExplicitAlarm, -1);
-  }
-
-  // trigger once at given time of day
-  AlarmID_t alarmOnce(time_t value, OnTick_t onTickHandler)
-  {
-    if (value <= 0 || value > SECS_PER_DAY)
-      return dtINVALID_ALARM_ID;
-    return create(value, onTickHandler, true, dtDailyAlarm, -1);
-  }
-  AlarmID_t alarmOnce(const int H, const int M, const int S, OnTick_t onTickHandler)
-  {
-    return alarmOnce(AlarmHMS(H, M, S), onTickHandler);
-  }
-
-  // trigger once on a given day and time
-  AlarmID_t alarmOnce(const timeDayOfWeek_t DOW, const int H, const int M, const int S, OnTick_t onTickHandler)
-  {
-    time_t value = (DOW - 1) * SECS_PER_DAY + AlarmHMS(H, M, S);
-    if (value <= 0)
-      return dtINVALID_ALARM_ID;
-    return create(value, onTickHandler, true, dtWeeklyAlarm, -1);
-  }
 
   // trigger daily at given time of day
-  AlarmID_t alarmRepeat(time_t value, int index, String id, OnTick_t onTickHandler)
+  AlarmID_t alarmRepeat(time_t value, int index, FutureJob work, OnTick_t onTickHandler)
   {
     if (value > SECS_PER_DAY)
       return dtINVALID_ALARM_ID;
-    return create(value, onTickHandler, false, dtDailyAlarm, index, id);
+    return create(value, onTickHandler, false, dtDailyAlarm, index, work);
   }
 
-  AlarmID_t alarmRepeat(const int H, const int M, const int S, int index, String id, OnTick_t onTickHandler)
+  AlarmID_t alarmRepeat(const int H, const int M, const int S, int index, FutureJob work, OnTick_t onTickHandler)
   {
-    return alarmRepeat(AlarmHMS(H, M, S), index, id, onTickHandler);
-  }
-
-  // trigger weekly at a specific day and time
-  AlarmID_t alarmRepeat(const timeDayOfWeek_t DOW, const int H, const int M, const int S, OnTick_t onTickHandler)
-  {
-    time_t value = (DOW - 1) * SECS_PER_DAY + AlarmHMS(H, M, S);
-    if (value <= 0)
-      return dtINVALID_ALARM_ID;
-    return create(value, onTickHandler, false, dtWeeklyAlarm, -1);
-  }
-
-  // trigger once after the given number of seconds
-  AlarmID_t timerOnce(time_t value, OnTick_t onTickHandler)
-  {
-    if (value <= 0)
-      return dtINVALID_ALARM_ID;
-    return create(value, onTickHandler, true, dtTimer, -1);
-  }
-  AlarmID_t timerOnce(const int H, const int M, const int S, OnTick_t onTickHandler)
-  {
-    return timerOnce(AlarmHMS(H, M, S), onTickHandler);
-  }
-
-  // trigger at a regular interval
-  AlarmID_t timerRepeat(time_t value, int index, String id, OnTick_t onTickHandler)
-  {
-    if (value <= 0)
-      return dtINVALID_ALARM_ID;
-    return create(value, onTickHandler, false, dtTimer, index, id);
-  }
-  AlarmID_t timerRepeat(const int H, const int M, const int S, int index, String id, OnTick_t onTickHandler)
-  {
-    return timerRepeat(AlarmHMS(H, M, S), index, id, onTickHandler);
+    return alarmRepeat(AlarmHMS(H, M, S), index, work, onTickHandler);
   }
 
   void delay(unsigned long ms);

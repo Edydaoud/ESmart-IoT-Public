@@ -26,7 +26,7 @@ void invertPin(int pin)
 
 void setPin(int pin, int val)
 {
-    if (pin < 16)
+    if (pin < 16 && pin > -1)
     {
         if (val)
             GPOS = (1 << pin);

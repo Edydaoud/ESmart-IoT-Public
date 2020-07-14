@@ -2,7 +2,13 @@
 
 ESmart::ESmart(){};
 
-String ESmart::getUserId() { return USER_ID; }
+Config ESmart::getConfig() { return _config; };
+void ESmart::setConfig(Config config) { _config = config; };
+
+String ESmart::getUserId()
+{
+  return getConfig().userId();
+}
 
 String ESmart::getUserPath(String id) { return "/users/" + getUserId() + "/" + WiFi.macAddress() + "/" + id; }
 
@@ -16,6 +22,47 @@ EsmartFirebase ESmart::getData(String id) { return data[id.c_str()]; };
 
 void ESmart::setData(EsmartFirebase esmart) { data[esmart.id.c_str()] = esmart; };
 
+void ESmart::doWork(FutureJob work)
+{
+  DEBUG_PRINT("doing work: ");
+  DEBUG_PRINTLN(work);
+  if (work.getRelayId() != NULL && work.getRelayId() != "null")
+  {
+    FirebaseJson json;
+    if (work.getRelayState() >= 0 && work.getRelayState() <= 1)
+    {
+      int newState = work.getRelayState();
+
+      setPin(work.getRelayPin(), newState);
+
+      if (work.getStatusPin() >= 0)
+        setPin(work.getStatusPin(), newState);
+
+      int state = readPin(work.getRelayPin());
+      json.set("relayState", state);
+    }
+    else
+    {
+      int newState = !readPin(work.getRelayPin());
+      setPin(work.getRelayPin(), newState);
+
+      if (work.getStatusPin() >= 0)
+        setPin(work.getStatusPin(), newState);
+
+      int state = readPin(work.getRelayPin());
+      json.set("relayState", state);
+    }
+
+    if (work.isSetState())
+    {
+      int state = readPin(work.getRelayPin());
+      json.set("state", state);
+    }
+
+    Firebase.updateNode(firebaseWriteData, getUserPath(work.getRelayId()), json);
+  }
+}
+
 void ESmart::initLocalTime()
 {
   waitForSync();
@@ -28,59 +75,31 @@ void ESmart::tickButtons()
   {
     buttons[i].tick();
   }
-  Alarm.delay(1000);
+  Alarm.delay(0);
 }
 
 void ESmart::streamCallback(StreamData data)
 {
   if (data.dataType() == "json")
   {
-    Serial.println(data.jsonString());
+    DEBUG_PRINT("Data received");
+    DEBUG_PRINTLN(data.jsonString());
     DynamicJsonDocument object(5120);
     deserializeJson(object, data.jsonString());
-    changeRelayState(&object);
+    changeRelayState(object);
   }
 }
 
-void ESmart::click(int pin, String id)
+void ESmart::createButton(int &pin, int &buttonPin, int &statusPin, String &id)
 {
-  FirebaseJson json;
-  invertPin(pin);
-  json.set("relayState", readPin(pin));
-  json.set("state", readPin(pin));
-  Firebase.updateNode(firebaseWriteData, getUserPath(id), json);
-}
-
-void ESmart::createButton(int pin, int buttonPin, String id)
-{
-  OneButton button(buttonPin, id, true, true);
-  button.attachClick([&](int pin, String id) { click(pin, id); }); // Attach with int literal
+  DEBUG_PRINTLN("creating button");
+  OneButton button(buttonPin, FutureJob(id, Job{pin, statusPin, NEUTRE, true}), false, false);
+  button.attachClick([&](FutureJob work) { doWork(work); });
+  button.attachLongPressStop([&](FutureJob work) { doWork(work); });
   buttons.push_back(button);
 }
 
-void ESmart::scheduleOff(int pin, String id)
-{
-  disablePin(pin - 1);
-
-  FirebaseJson json;
-  json.set("relayState", readPin(pin - 1));
-  json.set("state", readPin(pin - 1));
-
-  Firebase.updateNode(firebaseWriteData, getUserPath(id), json);
-}
-
-void ESmart::scheduleOn(int pin, String id)
-{
-  enablePin(pin);
-
-  FirebaseJson json;
-  json.set("relayState", readPin(pin));
-  json.set("state", readPin(pin));
-
-  Firebase.updateNode(firebaseWriteData, getUserPath(id), json);
-}
-
-void ESmart::creatOffAlarm(int pin, int time, String id)
+void ESmart::creatOffAlarm(int pin, int statusPin, int time, String id)
 {
   time_t offTime = static_cast<time_t>(time);
   if (Alarm.isAllocated(pin + 1))
@@ -90,109 +109,108 @@ void ESmart::creatOffAlarm(int pin, int time, String id)
       tmElements_t element;
       breakTime(offTime, element);
       Alarm.write(pin + 1, AlarmHMS(element.Hour, element.Minute, element.Second));
+      DEBUG_PRINTLN("updating off alarm");
     }
     else
+    {
+      DEBUG_PRINTLN("deleting off alarm");
       Alarm.free(pin + 1);
+    }
   }
   else if (time > 0)
   {
     tmElements_t element;
     breakTime(offTime, element);
-    Alarm.alarmRepeat(element.Hour, element.Minute, element.Second, pin + 1, id, [&](int relayPin, String relayId) {
-      scheduleOff(relayPin, relayId);
-    });
+    FutureJob work = FutureJob(id, Job{pin, statusPin, OFF, true});
 
+    Alarm.alarmRepeat(element.Hour, element.Minute, element.Second, pin + 1, work, [&](FutureJob work) {
+      doWork(work);
+    });
+    DEBUG_PRINT("creating off alarm");
     setAlarmEnabled(true);
   }
+  DEBUG_PRINT("alarm id: ");
+  DEBUG_PRINTLN(id);
 }
 
-void ESmart::creatOnAlarm(int pin, int time, String id)
+void ESmart::creatOnAlarm(int pin, int statusPin, int time, String id)
 {
   time_t onTime = static_cast<time_t>(time);
   if (Alarm.isAllocated(pin))
   {
     if (time != 0)
     {
+      DEBUG_PRINT("updating on alarm");
       tmElements_t element;
       breakTime(onTime, element);
       Alarm.write(pin, AlarmHMS(element.Hour, element.Minute, element.Second));
     }
     else
+    {
+      DEBUG_PRINT("deleting on alarm");
       Alarm.free(pin);
+    }
   }
   else
   {
     tmElements_t element;
     breakTime(onTime, element);
-    Alarm.alarmRepeat(element.Hour, element.Minute, element.Second, pin, id, [&](int relayPin, String relayId) {
-      scheduleOn(relayPin, relayId);
+    FutureJob work = FutureJob(id, Job{pin, statusPin, ON, true});
+
+    Alarm.alarmRepeat(element.Hour, element.Minute, element.Second, pin, work, [&](FutureJob work) {
+      doWork(work);
     });
+    DEBUG_PRINTLN("creating on alarm");
   }
+  DEBUG_PRINT("alarm id: ");
+  DEBUG_PRINTLN(id);
 }
 
-void ESmart::changeRelayState(DynamicJsonDocument *const &doc)
+void ESmart::changeRelayState(DynamicJsonDocument doc)
 {
-  if (!doc->operator[]("id").isNull())
+  if (!doc["id"].isNull())
   {
-    String eid = doc->operator[]("id");
+    String eid = doc["id"];
     EsmartFirebase esmartFirebase;
     esmartFirebase.init(doc);
-    Serial.println(esmartFirebase);
+    DEBUG_PRINTLN(esmartFirebase);
 
     if (esmartFirebase.id != "null")
     {
-      setData(esmartFirebase);
-
-      setPin(esmartFirebase.pin, esmartFirebase.state);
-
-      if (esmartFirebase.relayState != readPin(esmartFirebase.pin))
-      {
-        FirebaseJson json;
-        json.set("relayState", readPin(esmartFirebase.pin));
-        Firebase.updateNode(firebaseWriteData, getUserPath(esmartFirebase.id), json);
-      }
-
-      creatOnAlarm(esmartFirebase.pin, esmartFirebase.startTime, esmartFirebase.id);
-      creatOffAlarm(esmartFirebase.pin, esmartFirebase.endTime, esmartFirebase.id);
+      doWork(FutureJob(esmartFirebase.id, Job{esmartFirebase.pin, esmartFirebase.ledPin, esmartFirebase.state, false}));
+      creatOnAlarm(esmartFirebase.pin, esmartFirebase.ledPin, esmartFirebase.startTime, esmartFirebase.id);
+      creatOffAlarm(esmartFirebase.pin, esmartFirebase.ledPin, esmartFirebase.endTime, esmartFirebase.id);
     }
   }
-  else if (doc->operator[]("relayState").isNull())
+  else if (doc["relayState"].isNull())
   {
-    JsonObject obj = doc->as<JsonObject>();
+    JsonObject obj = doc.as<JsonObject>();
+
     for (auto kv : obj)
     {
+
       EsmartFirebase esmartFirebase;
-      Serial.println(esmartFirebase);
 
-      esmartFirebase.init(kv.key().c_str(), doc);
+      esmartFirebase.init(kv.value());
 
-      setData(esmartFirebase);
+      DEBUG_PRINTLN(esmartFirebase);
 
-      createButton(esmartFirebase.pin, esmartFirebase.buttonPin, esmartFirebase.id);
+      createButton(esmartFirebase.pin, esmartFirebase.buttonPin, esmartFirebase.ledPin, esmartFirebase.id);
 
       setOutput(esmartFirebase.pin);
+      setOutput(esmartFirebase.ledPin);
 
       if (esmartFirebase.defaultState == -1 && esmartFirebase.relayState != esmartFirebase.pin)
       {
-        FirebaseJson json;
-        setPin(esmartFirebase.pin, esmartFirebase.state);
-        json.set("relayState", esmartFirebase.state);
-        Firebase.updateNode(firebaseWriteData, getUserPath(esmartFirebase.id), json);
+        doWork(FutureJob(esmartFirebase.id, Job{esmartFirebase.pin, esmartFirebase.ledPin, esmartFirebase.state, false}));
       }
       else if (esmartFirebase.defaultState != -1)
       {
-        setPin(esmartFirebase.pin, esmartFirebase.defaultState);
-        if (esmartFirebase.relayState != readPin(esmartFirebase.pin))
-        {
-          FirebaseJson json;
-          json.set("relayState", esmartFirebase.defaultState);
-          json.set("state", esmartFirebase.defaultState);
-          Firebase.updateNode(firebaseWriteData, getUserPath(esmartFirebase.id), json);
-        }
+        doWork(FutureJob(esmartFirebase.id, Job{esmartFirebase.pin, esmartFirebase.ledPin, esmartFirebase.defaultState, true}));
       }
 
-      creatOnAlarm(esmartFirebase.pin, esmartFirebase.startTime, esmartFirebase.id);
-      creatOffAlarm(esmartFirebase.pin, esmartFirebase.endTime, esmartFirebase.id);
+      creatOnAlarm(esmartFirebase.pin, esmartFirebase.ledPin, esmartFirebase.startTime, esmartFirebase.id);
+      creatOffAlarm(esmartFirebase.pin, esmartFirebase.ledPin, esmartFirebase.endTime, esmartFirebase.id);
     }
   }
 }

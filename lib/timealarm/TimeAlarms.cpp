@@ -1,23 +1,3 @@
-/*
-  TimeAlarms.cpp - Arduino Time alarms for use with Time library
-  Copyright (c) 2008-2011 Michael Margolis.
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
- */
-
-/*
-  2 July 2011 - replaced alarm types implied from alarm value with enums to make trigger logic more robust
-              - this fixes bug in repeating weekly alarms - thanks to Vincent Valdy and draythomp for testing
-*/
-
 #include "TimeAlarms.h"
 
 #define IS_ONESHOT true // constants used in arguments to create method
@@ -290,7 +270,7 @@ void TimeAlarmsClass::serviceAlarms()
         }
         if (TickHandler != NULL)
         {
-          TickHandler(servicedAlarmId, Alarm[servicedAlarmId].id); // call the handler
+          TickHandler(Alarm[servicedAlarmId].work); // call the handler
         }
       }
     }
@@ -333,7 +313,7 @@ time_t TimeAlarmsClass::getNextTrigger(AlarmID_t ID) const
 }
 
 // attempt to create an alarm and return true if successful
-AlarmID_t TimeAlarmsClass::create(time_t value, OnTick_t onTickHandler, uint8_t isOneShot, dtAlarmPeriod_t alarmType, int index, String id)
+AlarmID_t TimeAlarmsClass::create(time_t value, OnTick_t onTickHandler, uint8_t isOneShot, dtAlarmPeriod_t alarmType, int index, FutureJob work)
 {
   if (!((dtIsAlarm(alarmType) && now() < SECS_PER_YEAR) || (dtUseAbsoluteValue(alarmType) && (value == 0))))
   {
@@ -347,27 +327,11 @@ AlarmID_t TimeAlarmsClass::create(time_t value, OnTick_t onTickHandler, uint8_t 
         Alarm[index].Mode.isOneShot = isOneShot;
         Alarm[index].Mode.alarmType = alarmType;
         Alarm[index].value = value;
-        Alarm[index].id = id;
+        Alarm[index].work = work;
         enable(index);
         return index; // alarm created ok
       }
     }
-    else
-      // only create alarm ids if the time is at least Jan 1 1971
-      for (uint8_t id = 0; id < dtNBR_ALARMS; id++)
-      {
-        if (Alarm[id].Mode.alarmType == dtNotAllocated)
-        {
-          // here if there is an Alarm id that is not allocated
-          Alarm[id].onTickHandler = onTickHandler;
-          Alarm[id].Mode.isOneShot = isOneShot;
-          Alarm[id].Mode.alarmType = alarmType;
-          Alarm[id].value = value;
-          Alarm[id].id = id;
-          enable(id);
-          return id; // alarm created ok
-        }
-      }
   }
   return dtINVALID_ALARM_ID; // no IDs available or time is invalid
 }

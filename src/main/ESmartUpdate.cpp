@@ -1,7 +1,7 @@
 #include "ESmartUpdate.hpp"
-#include "Config.h"
+#include "Config.hpp"
 
-#define DEBUG
+// #define DEBUG
 
 ESmartUpdate::ESmartUpdate(){};
 
@@ -14,19 +14,16 @@ void ESmartUpdate::handleUpdate(String jsonStr)
   String url = object["url"];
   String host = object["host"];
 
-#ifdef DEBUG
-  Serial.print("handeling update old version: ");
-  Serial.print(VERSION);
-  Serial.print(" new version: ");
-  Serial.println(version);
-#endif
+  DEBUG_PRINT("handeling update old version: ");
+  DEBUG_PRINT(VERSION);
+  DEBUG_PRINT(" new version: ");
+  DEBUG_PRINTLN(version);
   Updates update = Updates{version};
 
   strcpy(update.url, url.c_str());
   strcpy(update.host, host.c_str());
-
-  Serial.println(update.host);
-  Serial.println(update.url);
+  DEBUG_PRINT(update.host);
+  DEBUG_PRINTLN(update.url);
   saveUpdates(update);
 }
 
@@ -36,17 +33,14 @@ void ESmartUpdate::checkForUpdate()
   EEPROM.begin(EEPROM_SIZE);
   EEPROM.get(address, update);
   EEPROM.end();
-  Serial.println(update.host);
-  Serial.println(update.url);
-
+  DEBUG_PRINT(update.host);
+  DEBUG_PRINTLN(update.url);
   if (VERSION < update.version)
   {
-#ifdef DEBUG
-    Serial.print("Update found old version: ");
-    Serial.println(VERSION);
-    Serial.print("new version: ");
-    Serial.println(update.url);
-#endif
+    DEBUG_PRINT("Update found old version: ");
+    DEBUG_PRINT(VERSION);
+    DEBUG_PRINT(" new version: ");
+    DEBUG_PRINTLN(update.url);
     startUpdate(update.host, update.url);
   }
 }
@@ -56,45 +50,33 @@ void ESmartUpdate::startUpdate(char *downloadHost, char *firmwarelink)
   int size = strlen(downloadHost) + strlen(firmwarelink) + 10;
   char link[size];
   snprintf(link, size, "https://%s%s", downloadHost, firmwarelink);
-#ifdef DEBUG
-  Serial.print("Starting OTA from: ");
-  Serial.println(link);
-#endif
+  DEBUG_PRINT("Starting OTA from: ");
+  DEBUG_PRINTLN(link);
   BearSSL::WiFiClientSecure client;
   client.setInsecure();
   client.setTimeout(1000);
-#ifdef DEBUG
-  Serial.print("connecting to ");
-  Serial.println(downloadHost);
-#endif
+  DEBUG_PRINT("connecting to ");
+  DEBUG_PRINTLN(downloadHost);
   if (!client.connect(downloadHost, httpsPort))
   {
-#ifdef DEBUG
-    Serial.println("connection failed");
-#endif
+    DEBUG_PRINTLN("connection failed");
     return;
   }
   else
   {
-#ifdef DEBUG
-    Serial.println("connected!");
-#endif
+    DEBUG_PRINTLN("connected!");
   }
   auto ret = ESPhttpUpdate.update(client, link);
-#ifdef DEBUG
-  Serial.println("update failed, result: ");
-  Serial.print((int)ret);
-#endif
+  DEBUG_PRINT("update failed, result: ");
+  DEBUG_PRINTLN((int)ret);
   return;
 }
 
 void ESmartUpdate::saveUpdates(const Updates &update)
 {
-  if (update.host != NULL && update.url != NULL)
+  if (update.host != NULL && update.url != NULL && update.host != "null" && update.url != "null")
   {
-#ifdef DEBUG
-    Serial.println("Saving update");
-#endif
+    DEBUG_PRINTLN("Saving update");
     EEPROM.begin(EEPROM_SIZE);
     EEPROM.put(address, update);
     EEPROM.commit();

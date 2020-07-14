@@ -1,26 +1,18 @@
 #include "EsmartFirebase.hpp"
 
 EsmartFirebase::EsmartFirebase(){};
-EsmartFirebase::EsmartFirebase(DynamicJsonDocument *const &doc){
-  init(doc);
-};
 
-void EsmartFirebase::init(String key, DynamicJsonDocument *const &doc)
+void EsmartFirebase::init(DynamicJsonDocument const &doc)
 {
-  DynamicJsonDocument edoc = doc->operator[](key);
-  init(&edoc);
-};
-
-void EsmartFirebase::init(DynamicJsonDocument *const &doc)
-{
-  setState(doc->operator[]("state"));
-  setPin(doc->operator[]("pin"));
-  setId(doc->operator[]("id"));
-  setDefaultState(doc->operator[]("defaultState"));
-  setRelayState(doc->operator[]("relayState"));
-  setEndTime(doc->operator[]("endTime"));
-  setButtonPin(doc->operator[]("buttonPin"));
-  setStartTime(doc->operator[]("startTime"));
+  setState(doc["state"]);
+  setPin(doc["pin"]);
+  setId(doc["id"]);
+  setDefaultState(doc["defaultState"]);
+  setRelayState(doc["relayState"]);
+  setEndTime(doc["endTime"]);
+  setButtonPin(doc["buttonPin"]);
+  setStartTime(doc["startTime"]);
+  setLedPin(doc["ledPin"]);
 };
 
 void EsmartFirebase::setState(int firebaseState)
@@ -61,6 +53,11 @@ void EsmartFirebase::setStartTime(double firebaseStartTime)
 void EsmartFirebase::setEndTime(double firebaseEndTime)
 {
   endTime = firebaseEndTime;
+}
+
+void EsmartFirebase::setLedPin(int firebaseLedPin)
+{
+  ledPin = firebaseLedPin;
 }
 
 int EsmartFirebase::getDefaultState()

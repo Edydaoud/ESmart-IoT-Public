@@ -6,7 +6,7 @@
 #include "TimeAlarms.h"
 
 #include <Time.h>
-#include "Config.h"
+#include "Config.hpp"
 #include "FirebaseESP8266.h"
 #include "GPIO.hpp"
 
@@ -15,6 +15,7 @@ class ESmart
 
 private:
     bool alarmEnabled = false;
+    Config _config;
 
 public:
     ESmart();
@@ -30,20 +31,29 @@ public:
 
     bool isAlarmEnabled();
     void setAlarmEnabled(bool isEnabled);
-    void click(int pin, String id);
-    void createButton(int pin, int buttonPin, String id);
-    void changeRelayState(DynamicJsonDocument *const &doc);
+    void click(int pin, int statusPin, String id);
+    void createButton(int &pin, int &buttonPin, int &statusPin, String &id);
+    void changeRelayState(DynamicJsonDocument doc);
     void streamCallback(StreamData data);
-    void scheduleOff(int pin, String id);
-    void scheduleOn(int pin, String id);
-    void creatOffAlarm(int pin, int time, String id);
-    void creatOnAlarm(int pin, int time, String id);
+    void scheduleOff(int pin, int statusPin, String id);
+    void scheduleOn(int pin, int statusPin, String id);
+    void creatOffAlarm(int pin, int statusPin, int time, String id);
+    void creatOnAlarm(int pin, int statusPin, int time, String id);
     void tickButtons();
     void click();
     void initLocalTime();
+    void setConfig(Config config);
     void setData(EsmartFirebase esmart);
+    void doWork(FutureJob work);
+    Config getConfig();
 
+    bool hasAny(int num)
+    {
+        if (std::find(std::begin({0, 1}), std::end({0, 1}), 1) != std::end({0, 1}))
+            return true;
+        else
+            return false;
+    }
 
     EsmartFirebase getData(String id);
-    
 };

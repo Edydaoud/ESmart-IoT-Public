@@ -15,9 +15,9 @@ public:
   int buttonPin;
   int startTime;
   int endTime;
+  int ledPin;
 
-  void init(String key, DynamicJsonDocument * const &doc);
-  void init(DynamicJsonDocument * const &doc);
+  void init(DynamicJsonDocument const &doc);
 
   void setState(int firebaseState);
   void setId(String firebaseId);
@@ -27,6 +27,7 @@ public:
   void setRelayState(int firebaseRelayState);
   void setEndTime(double firebaseEndTime);
   void setStartTime(double firebaseStartTime);
+  void setLedPin(int ledPin);
 
   int getDefaultState();
 
@@ -48,6 +49,8 @@ public:
     t += p.println(startTime);
     t += p.print("endTime: ");
     t += p.println(endTime);
+    t += p.print("ledPin: ");
+    t += p.println(ledPin);
     return t;
   }
 };
