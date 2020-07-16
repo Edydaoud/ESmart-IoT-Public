@@ -7,6 +7,7 @@ struct Job
     int _statusPin;
     int _relayState;
     bool _setState;
+    int _jobId;
 };
 
 class FutureJob : public Printable
@@ -22,7 +23,10 @@ public:
     int getRelayPin();
     int getStatusPin();
     int getRelayState();
+    int getJobId();
+
     String getRelayId();
+    void doWork();
     bool isSetState();
 
 
@@ -40,6 +44,8 @@ public:
     t += p.println(_job._relayState);
     t += p.print("_setState: ");
     t += p.println(_job._setState);
+    t += p.print("_jobId: ");
+    t += p.println(_job._jobId);
     return t;
   }
 };

@@ -467,7 +467,7 @@ namespace ezt {
 				infoln(F("Waiting for time sync"));
 				while (_time_status != timeSet) {
 					if ( timeout && (millis() - start) / 1000 > timeout ) { triggerError(TIMEOUT); return false;};
-					delay(250);
+					delay(100);
 					events();
 				}
 				infoln(F("Time is in sync"));

@@ -1,54 +1,54 @@
-#include "EsmartFirebase.hpp"
+#include <OneButton.h>
+#include <Time.h>
+
 #include <unordered_map>
 
-#include "ezTime.h"
-#include "OneButton.h"
-#include "TimeAlarms.h"
-
-#include <Time.h>
 #include "Config.hpp"
+#include "EsmartFirebase.hpp"
 #include "FirebaseESP8266.h"
 #include "GPIO.hpp"
+#include "TimeAlarms.h"
+#include "ezTime.h"
 
-class ESmart
-{
-
-private:
+class ESmart {
+   private:
     bool alarmEnabled = false;
     Config _config;
+    std::vector<OneButton> buttons;
+    time_t oldTime = 0;
+    time_t longPressReset;
 
-public:
+   public:
     ESmart();
 
     FirebaseData firebaseStreamData;
-    FirebaseData firebaseWriteData;
-    std::vector<OneButton> buttons;
+    FirebaseData firebaseJobData;
     std::unordered_map<std::string, EsmartFirebase> data;
 
     String getUserId();
     String getUpdatePath();
     String getUserPath(String id);
 
-    bool isAlarmEnabled();
-    void setAlarmEnabled(bool isEnabled);
-    void click(int pin, int statusPin, String id);
-    void createButton(int &pin, int &buttonPin, int &statusPin, String &id);
-    void changeRelayState(DynamicJsonDocument doc);
+    void createButton(int &pin, int &buttonState, int &buttonPin, int &statusPin, String &id);
+    void changeRelayState(DynamicJsonDocument &doc);
     void streamCallback(StreamData data);
-    void scheduleOff(int pin, int statusPin, String id);
-    void scheduleOn(int pin, int statusPin, String id);
-    void creatOffAlarm(int pin, int statusPin, int time, String id);
-    void creatOnAlarm(int pin, int statusPin, int time, String id);
-    void tickButtons();
+
+    void creatOffAlarm(int &pin, int &statusPin, int &time, String &id);
+    void creatOnAlarm(int &pin, int &statusPin, int &time, String &id);
+
+    void handleLoop();
     void click();
     void initLocalTime();
-    void setConfig(Config config);
-    void setData(EsmartFirebase esmart);
-    void doWork(FutureJob work);
+
+    void setConfig(Config &config);
+
+    void doWork(FutureJob &work, bool localData = false);
+
+    void initLocalState(std::shared_ptr<StaticJsonDocument<1024>> doc);
+
     Config getConfig();
 
-    bool hasAny(int num)
-    {
+    bool hasAny(int num) {
         if (std::find(std::begin({0, 1}), std::end({0, 1}), 1) != std::end({0, 1}))
             return true;
         else

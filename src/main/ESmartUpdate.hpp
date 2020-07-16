@@ -1,20 +1,12 @@
-#include "ESP8266httpUpdate.h"
-#include "EEPROM.h"
 #include "ArduinoJson.h"
-#include "Config.h"
+#include "Config.hpp"
+#include "ESP8266httpUpdate.h"
 
-struct Updates
-{
-    int version;
-    char host[32];
-    char url[64];
-};
-
-class ESmartUpdate
-{
-
-public:
+class ESmartUpdate {
+   public:
     ESmartUpdate();
+    Config config;
+    
     const int address = 0;
 
     const int16_t httpsPort = 443;
