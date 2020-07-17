@@ -53,6 +53,7 @@ void OneButton::reset(void) {
     _state = 0;  // restart.
     _startTime = 0;
     _stopTime = 0;
+    _pin = 0;
     _isLongPressed = false;
 }
 

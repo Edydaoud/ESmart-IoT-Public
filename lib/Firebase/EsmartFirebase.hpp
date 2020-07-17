@@ -1,6 +1,6 @@
+#pragma once
 #include <ArduinoJson.h>
-
-#include "Config.hpp"
+#include <FirebaseESP8266.h>
 
 class EsmartFirebase : public Printable {
    public:
@@ -54,18 +54,28 @@ class EsmartFirebase : public Printable {
         t += p.println(ledPin);
         t += p.print("buttonState: ");
         t += p.println(buttonState);
+        t += p.print("relayState: ");
+        t += p.println(relayState);
         return t;
     }
 
+    String toString() { return getJsonDoc().as<String>(); }
+
     DynamicJsonDocument getJsonDoc() {
-        DynamicJsonDocument doc(1024);
+        DynamicJsonDocument doc(250);
         doc["state"] = state;
         doc["pin"] = pin;
         doc["buttonPin"] = buttonPin;
         doc["id"] = id;
-        doc["defaultState"] = defaultState;
-        doc["relayState"] = state;
         doc["buttonState"] = buttonState;
+        doc["defaultState"] = defaultState;
         return doc;
+    }
+
+    FirebaseJson getFirebaseJson() {
+        FirebaseJson json;
+        json.add("state", state);
+        json.add("relayState", relayState);
+        return json;
     }
 };
