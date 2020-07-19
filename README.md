@@ -8,7 +8,7 @@ Create a Firebase project.
 
 Enable Realtime Database and create a json file under `/users/{user id}/{board mac adress}/`
 
-```json
+```javascript
 {
   "uRwPtyKzTM": {
     "buttonPin": 0, // (optional) hardware button to manually control your device
