@@ -1,15 +1,24 @@
 language: python
 python:
-    - "2.7"
+  - "2.7"
 
 sudo: false
 cache:
-    directories:
-        - "~/.platformio"
+  directories:
+    - "~/.platformio"
 
 install:
-    - pip install -U platformio
-    - platformio update
+  - pip install -U platformio
+  - platformio update
+  #
+  # Libraries from PlatformIO Library Registry:
+  #
+  # https://platformio.org/lib/show/44/Time
+  # https://platformio.org/lib/show/64/ArduinoJson
+  # https://platformio.org/lib/show/6247/Firebase%20ESP8266%20Client
+  # https://platformio.org/lib/show/551/NTPClient
+
+  - platformio lib -g install 44 64 6247 551
 
 script:
-    - platformio run
+  - platformio run
