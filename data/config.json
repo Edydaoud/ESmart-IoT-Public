@@ -1,7 +1,7 @@
 {
-  "wifiAp": "ap",
-  "wifiPass": "pass",
-  "userId": "id",
-  "firebaseUrl": "firebaseUrl",
-  "firebaseKey": "firebaseKey"
+  "wifiAp": "wifi name",
+  "wifiPass": "wifi password",
+  "userId": "firebase user id",
+  "firebaseUrl": "firebase project url",
+  "firebaseKey": "database secret"
 }
