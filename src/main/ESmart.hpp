@@ -27,7 +27,7 @@
 #define INFOM(...)
 #endif
 
-#ifdef SONOFF
+#ifdef INVERTED_PINS
 #define WRITE_OPERATOR 1
 #define READ_OPERATOR 1
 #else
@@ -101,3 +101,5 @@ void createAlarms(EsmartFirebase &esmart);
 
 int readPin(int pin);
 void writePin(int pin, int statusPin, int val);
+
+bool isInternetConnected() { return isConnected && WiFi.status() == WL_CONNECTED; }

@@ -11,7 +11,7 @@ using callbackFunction = std::function<void(FutureJob&)>;
 class OneButton {
    public:
     OneButton();
-    OneButton(int buttonPin, int buttonState, FutureJob work, boolean activeLow = true, bool pullupActive = true);
+    OneButton(int buttonPin, int buttonState, FutureJob work);
 
     void setDebounceTicks(int ticks);
     void setClickTicks(int ticks);
@@ -25,9 +25,10 @@ class OneButton {
     void attachDuringLongPress(callbackFunction newFunction);
     void tick(void);
     void tick(bool level);
-    bool isLongPressed();
-    int getPressedTicks();
     void reset(void);
+    
+    int getPressedTicks();
+    bool isLongPressed();
 
    private:
     int _pin;  // hardware pin number.
@@ -43,22 +44,12 @@ class OneButton {
     bool _isLongPressed = false;
 
     callbackFunction _clickFunc = NULL;
-    void *_clickFuncParam = NULL;
-
     callbackFunction _doubleClickFunc = NULL;
-    void *_doubleClickFuncParam = NULL;
-
     callbackFunction _pressFunc = NULL;
     callbackFunction _pressStartFunc = NULL;
-
     callbackFunction _longPressStartFunc = NULL;
-    void *_longPressStartFuncParam = NULL;
-
     callbackFunction _longPressStopFunc = NULL;
-    void *_longPressStopFuncParam;
-
     callbackFunction _duringLongPressFunc = NULL;
-    void *_duringLongPressFuncParam = NULL;
 
     int _state = 0;
     unsigned long _startTime;  // will be set in state 1

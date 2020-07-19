@@ -1,5 +1,5 @@
 #pragma once
-#include<EsmartFirebase.hpp>
+#include <EsmartFirebase.hpp>
 
 class FutureJob {
    public:
@@ -7,4 +7,8 @@ class FutureJob {
 
     FutureJob();
     FutureJob(EsmartFirebase &esmart);
+
+    void clear() {
+        esmart = nullptr;
+    }
 };

@@ -1,4 +1,4 @@
-#include "ESmarts.hpp"
+#include "ESmart.hpp"
 
 /* 
     Loading configs and local data
@@ -19,7 +19,7 @@ void loop() {
     for (size_t i = 0; i < buttons.size(); i++) {
         buttons[i].tick();
     }
-    if (isConnected) Alarm.delay(0);
+    if (isInternetConnected()) Alarm.delay(0);
 }
 
 /* 
@@ -27,6 +27,8 @@ void loop() {
  */
 void connect() {
     WiFi.begin(configs.wifiAp, configs.wifiPass);
+    WiFi.setAutoConnect(true);
+
     INFO("Connecting to: %s\n", configs.wifiAp.c_str());
 
     int wifiTimout = 0;
@@ -60,12 +62,11 @@ void begin() {
         }
     }
 
-    if (isConnected) {
+    if (isInternetConnected()) {
         setTime(timeClient.getEpochTime());
         INFO("Done syncing, current time: %ld\n\n", timeClient.getEpochTime());
 
         Firebase.begin(configs.firebaseUrl, configs.firebaseKey);
-        Firebase.reconnectWiFi(true);
 
         Firebase.setMaxRetry(firebaseJobData, 5);
         Firebase.setMaxErrorQueue(firebaseJobData, 10);
@@ -77,6 +78,7 @@ void begin() {
 
         firebaseStreamData.setResponseSize(2048);
         firebaseStreamData.setBSSLBufferSize(1024, 1024);
+
         Firebase.beginStream(firebaseStreamData, configs.getUserPath());
         Firebase.setStreamCallback(firebaseStreamData, streamCallback);
     } else {
@@ -247,9 +249,8 @@ void setLocalData(EsmartFirebase &esmart) {
 void updateNode(EsmartFirebase &esmart) {
     INFO("Updating node data: %s\n\n", esmart.toString().c_str());
 
-    if (isConnected) {
+    if (isInternetConnected()) {
         delay(250);
-
         FirebaseJson json = esmart.getFirebaseJson();
         Firebase.updateNode(firebaseJobData, configs.getUserPath(esmart.id), json);
     }
@@ -269,7 +270,7 @@ void doWork(FutureJob &work) {
 void createButton(EsmartFirebase &esmart) {
     INFO("Creating button: %s\n\n", esmart.toString().c_str());
 
-    OneButton button(esmart.buttonPin, esmart.buttonState, FutureJob(esmart), true, false);
+    OneButton button(esmart.buttonPin, esmart.buttonState, FutureJob(esmart));
 
     button.attachClick([&](FutureJob &work) {
         INFO("Triggering on click: %s\n\n", work.esmart.toString().c_str());

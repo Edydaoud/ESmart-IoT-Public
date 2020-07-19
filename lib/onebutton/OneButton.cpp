@@ -4,50 +4,27 @@ OneButton::OneButton() {
     _pin = -1;
 }
 
-OneButton::OneButton(int buttonPin, int buttonState, FutureJob work, boolean activeLow, bool pullupActive) {
+OneButton::OneButton(int buttonPin, int buttonState, FutureJob work) {
     _work = work;
     _pin = buttonPin;
     _buttonPressed = buttonState;
     pinMode(buttonPin, INPUT_PULLUP);
 }
 
-void OneButton::setDebounceTicks(int ticks) {
-    _debounceTicks = ticks;
-}
-void OneButton::setClickTicks(int ticks) {
-    _clickTicks = ticks;
-}  // setClickTicks
-void OneButton::setPressTicks(int ticks) {
-    _pressTicks = ticks;
-}  // setPressTicks
-void OneButton::attachClick(callbackFunction newFunction) {
-    _clickFunc = newFunction;
-}  // attachClick
-void OneButton::attachDoubleClick(callbackFunction newFunction) {
-    _doubleClickFunc = newFunction;
-}  // attachDoubleClick
-void OneButton::attachPress(callbackFunction newFunction) {
-    _pressFunc = newFunction;
-}  // attachPress
-void OneButton::attachPressStart(callbackFunction newFunction) {
-    _pressStartFunc = newFunction;
-}  // attachPressStart
-void OneButton::attachLongPressStart(callbackFunction newFunction) {
-    _longPressStartFunc = newFunction;
-}  // attachLongPressStart
-void OneButton::attachLongPressStop(callbackFunction newFunction) {
-    _longPressStopFunc = newFunction;
-}  // attachLongPressStop
-void OneButton::attachDuringLongPress(callbackFunction newFunction) {
-    _duringLongPressFunc = newFunction;
-}  // attachDuringLongPress
-bool OneButton::isLongPressed() {
-    return _isLongPressed;
-}
+void OneButton::setDebounceTicks(int ticks) { _debounceTicks = ticks; }
+void OneButton::setClickTicks(int ticks) { _clickTicks = ticks; }                                            // setClickTicks
+void OneButton::setPressTicks(int ticks) { _pressTicks = ticks; }                                            // setPressTicks
+void OneButton::attachClick(callbackFunction newFunction) { _clickFunc = newFunction; }                      // attachClick
+void OneButton::attachDoubleClick(callbackFunction newFunction) { _doubleClickFunc = newFunction; }          // attachDoubleClick
+void OneButton::attachPress(callbackFunction newFunction) { _pressFunc = newFunction; }                      // attachPress
+void OneButton::attachPressStart(callbackFunction newFunction) { _pressStartFunc = newFunction; }            // attachPressStart
+void OneButton::attachLongPressStart(callbackFunction newFunction) { _longPressStartFunc = newFunction; }    // attachLongPressStart
+void OneButton::attachLongPressStop(callbackFunction newFunction) { _longPressStopFunc = newFunction; }      // attachLongPressStop
+void OneButton::attachDuringLongPress(callbackFunction newFunction) { _duringLongPressFunc = newFunction; }  // attachDuringLongPress
 
-int OneButton::getPressedTicks() {
-    return _stopTime - _startTime;
-}
+bool OneButton::isLongPressed() { return _isLongPressed; }
+
+int OneButton::getPressedTicks() { return _stopTime - _startTime; }
 
 void OneButton::reset(void) {
     _state = 0;  // restart.
@@ -55,6 +32,7 @@ void OneButton::reset(void) {
     _stopTime = 0;
     _pin = 0;
     _isLongPressed = false;
+    _work.clear();
 }
 
 void OneButton::tick(void) {
