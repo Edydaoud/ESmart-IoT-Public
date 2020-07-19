@@ -1,7 +1,7 @@
 {
-  "wifiAp": "Edd",
-  "wifiPass": "Edydaoud1$",
-  "userId": "9cEppavGN6QLx7cdYWhYs1mu4hf1",
-  "firebaseUrl": "esmart-84dc8.firebaseio.com",
-  "firebaseKey": "OVWccH2Pb7ASogaiadDdn70nPpDqMS085mufvaPt"
+  "wifiAp": "ap",
+  "wifiPass": "pass",
+  "userId": "id",
+  "firebaseUrl": "firebaseUrl",
+  "firebaseKey": "firebaseKey"
 }
