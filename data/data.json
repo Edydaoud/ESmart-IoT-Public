@@ -1,0 +1,47 @@
+{
+    "IhhZgiDbaS" : {
+      "buttonPin" : 2,
+      "buttonState" : 0,
+      "defaultState" : -1,
+      "endTime" : 0,
+      "id" : "IhhZgiDbaS",
+      "pin" : 5,
+      "relayState" : 1,
+      "startTime" : 1595063580,
+      "state" : 1
+    },
+    "KEOswmvGeI" : {
+      "buttonPin" : 15,
+      "buttonState" : 1,
+      "defaultState" : -1,
+      "endTime" : 0,
+      "id" : "KEOswmvGeI",
+      "pin" : 4,
+      "relayState" : 0,
+      "startTime" : 0,
+      "state" : 0
+    },
+    "oDJwrYwZtf" : {
+      "buttonPin" : 12,
+      "buttonState" : 0,
+      "defaultState" : -1,
+      "endTime" : 0,
+      "id" : "oDJwrYwZtf",
+      "pin" : 16,
+      "relayState" : 0,
+      "startTime" : 0,
+      "state" : 0
+    },
+    "tdNQSUuhLE" : {
+      "buttonPin" : 13,
+      "buttonState" : 0,
+      "defaultState" : -1,
+      "endTime" : 0,
+      "id" : "tdNQSUuhLE",
+      "pin" : 14,
+      "relayState" : 1,
+      "startTime" : 0,
+      "state" : 1
+    }
+  }
+  

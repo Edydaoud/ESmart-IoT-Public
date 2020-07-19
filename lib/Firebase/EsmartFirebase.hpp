@@ -59,16 +59,28 @@ class EsmartFirebase : public Printable {
         return t;
     }
 
-    String toString() { return getJsonDoc().as<String>(); }
+    String toString() {
+        DynamicJsonDocument doc(250);
+        doc["state"] = state;
+        doc["pin"] = pin;
+        doc["relayState"] = relayState;
+        doc["buttonPin"] = buttonPin;
+        doc["id"] = id;
+        doc["buttonState"] = buttonState;
+        doc["defaultState"] = defaultState;
+        doc["ledPin"] = ledPin;
+        return doc.as<String>();
+    }
 
     DynamicJsonDocument getJsonDoc() {
-        DynamicJsonDocument doc(250);
+        DynamicJsonDocument doc(300);
         doc["state"] = state;
         doc["pin"] = pin;
         doc["buttonPin"] = buttonPin;
         doc["id"] = id;
         doc["buttonState"] = buttonState;
         doc["defaultState"] = defaultState;
+        doc["ledPin"] = ledPin;
         return doc;
     }
 

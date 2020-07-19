@@ -5,7 +5,7 @@
 #include "FutureJob.hpp"
 
 extern "C" {
-using callbackFunction = std::function<void(FutureJob)>;
+using callbackFunction = std::function<void(FutureJob&)>;
 }
 
 class OneButton {
