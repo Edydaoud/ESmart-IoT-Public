@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266httpUpdate.h>
 #include <FirebaseESP8266.h>
 #include <LittleFS.h>
 #include <NTPClient.h>
@@ -34,6 +35,34 @@
 #define WRITE_OPERATOR 0
 #define READ_OPERATOR 0
 #endif
+
+#define VERSION 2
+#define FIRMWARE_PATH "/firmware/"
+
+class UpdateConfig {
+   public:
+    String host;
+    String url;
+    int version;
+
+    UpdateConfig(String serverHost, String serverUrl, int serverVersion) {
+        host = serverHost;
+        url = serverUrl;
+        version = serverVersion;
+    }
+
+    UpdateConfig(DynamicJsonDocument document) {
+        setHost(document["host"]);
+        setUrl(document["url"]);
+        setVersion(document["version"]);
+    }
+
+    void setHost(String serverHost) { host = serverHost; }
+    void setUrl(String serverUrl) { url = serverUrl; }
+    void setVersion(int serverVersion) { version = serverVersion; }
+
+    String getUpdateUrl() { return "https://" + host + url; }
+};
 
 class Configs {
    public:
@@ -75,6 +104,8 @@ bool isConnected = false;
 
 std::vector<OneButton> buttons;
 
+const int16_t httpsPort = 443;
+
 void loop();
 void setup();
 
@@ -103,3 +134,9 @@ int readPin(int pin);
 void writePin(int pin, int statusPin, int val);
 
 bool isInternetConnected() { return isConnected && WiFi.status() == WL_CONNECTED; }
+
+void startUpdate(UpdateConfig &config);
+void saveUpdates(DynamicJsonDocument &doc);
+void handleUpdate(String jsonStr);
+bool checkForNewVersion();
+void checkForServerUpdate();

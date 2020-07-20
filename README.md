@@ -1,8 +1,23 @@
 # ESmart-IoT [![Build Status](https://travis-ci.org/Edydaoud/ESmart-IoT-Public.svg?branch=sonoff_basic)](https://travis-ci.org/Edydaoud/ESmart-IoT-Public)
 
-This project aims to let anyone with basic Arduino knowledge to make a smarter home using [Firebase](http://console.firebase.google.com/), [Platformio IDE](https://platformio.org/platformio-ide) and any supported [ESP8266](https://www.espressif.com/en/products/socs/esp8266/overview) board.
+This project aims to let anyone with basic Arduino knowledge to make a smarter home using [Firebase](http://console.firebase.google.com/), [Platformio IDE](https://platformio.org/platformio-ide), and any supported [ESP8266](https://www.espressif.com/en/products/socs/esp8266/overview) board.
 
-## Firebase Configurations
+## Prerequisites
+
+- Basic Arduino knowledge.
+- Platformio [CLI](https://docs.platformio.org/en/latest/core/) or [IDE](https://platformio.org/platformio-ide),
+- Arduino board with integrated ESP8266 chip.
+- Firebase project.
+
+## Dependencies
+
+- ESP8266 Core SDK version 2.4.0 and above.
+- [ArduinoJson](https://github.com/bblanchon/ArduinoJson).
+- [Firebase-ESP8266](https://github.com/mobizt/Firebase-ESP8266).
+- [NTPClient](https://github.com/arduino-libraries/NTPClient).
+- [Time](https://github.com/PaulStoffregen/Time).
+
+## Instructions - Firebase
 
 Create a Firebase project.
 
@@ -25,7 +40,7 @@ Enable Realtime Database and create a json file under `/users/{user id}/{board m
 }
 ```
 
-## Project Configurations
+## Instructions - Project
 
 Go to `data/config.json` and edit it
 
@@ -43,9 +58,9 @@ Save it and upload it to the your Arduino filesystem by pressing on Upload File 
 
 ## Build
 
-You can build either in Cli or in IDE by running `platformio run -e {env name}` or check original doc [here](https://docs.platformio.org/en/latest/core/userguide/cmd_run.html)
+You can build it either in IDE or CLI by running `platformio run -e {env name}` in terminal [&#9432;](https://docs.platformio.org/en/latest/core/userguide/cmd_run.html)
 
-**ESmart-IoT** was tested on the following platforms:
+## Tested Devices
 
-* Wemos D1 Mini
-* Sonoff Basic
+- Wemos D1 Mini
+- Sonoff Basic

@@ -62,7 +62,7 @@ void begin() {
         }
     }
 
-    if (isInternetConnected()) {
+    if (isInternetConnected() && !checkForNewVersion()) {
         setTime(timeClient.getEpochTime());
         INFO("Done syncing, current time: %ld\n\n", timeClient.getEpochTime());
 
@@ -81,6 +81,8 @@ void begin() {
 
         Firebase.beginStream(firebaseStreamData, configs.getUserPath());
         Firebase.setStreamCallback(firebaseStreamData, streamCallback);
+
+        checkForServerUpdate();
     } else {
         INFOM("Couldn't connect to internet working in offline mode");
     }
@@ -379,4 +381,66 @@ void writePin(int pin, int statusPin, int val) {
     INFO("Writing to pin %d new value %d and val %d\n\n", pin, val, newVal);
     digitalWrite(pin, newVal);
     digitalWrite(statusPin, val);
+}
+
+void checkForServerUpdate() {
+    Firebase.getJSON(firebaseJobData, FIRMWARE_PATH);
+    handleUpdate(firebaseJobData.jsonString());
+}
+
+void handleUpdate(String jsonStr) {
+    DynamicJsonDocument doc(250);
+    deserializeJson(doc, jsonStr);
+    INFO("Handeling update data %s\n\n", jsonStr.c_str());
+    UpdateConfig config = UpdateConfig(doc);
+    saveUpdates(doc);
+}
+
+bool checkForNewVersion() {
+    INFOM("Checking for new version\n\n");
+
+    if (!beginWrite()) return false;
+
+    File updateFile = LittleFS.open("/firmware.json", "r");
+    DynamicJsonDocument doc(250);
+    deserializeJson(doc, updateFile);
+    UpdateConfig config = UpdateConfig(doc);
+
+    if (VERSION < config.version) {
+        INFO("New version found: old version %d new version %d\n\n", VERSION, config.version);
+        startUpdate(config);
+        return true;
+    } else {
+        INFOM("No new version found\n");
+        return false;
+    }
+}
+
+void startUpdate(UpdateConfig &config) {
+    INFOM("Starting update\n\n");
+
+    BearSSL::WiFiClientSecure client;
+    client.setInsecure();
+    client.setTimeout(5000);
+
+    if (!client.connect(config.host, httpsPort)) {
+        INFO("Could not connect to %s\n\n", config.getUpdateUrl().c_str());
+        return;
+    } else {
+        INFO("Connected successfully to %s\n\n", config.getUpdateUrl().c_str());
+    }
+
+    auto ret = ESPhttpUpdate.update(client, config.getUpdateUrl());
+
+    if (ret == HTTP_UPDATE_FAILED) {
+        INFOM("Update failed\n");
+    } else if (ret == HTTP_UPDATE_OK) {
+        INFOM("Update success, rebooting\n");
+    }
+}
+
+void saveUpdates(DynamicJsonDocument &doc) {
+    if (!beginWrite()) return;
+    File updateFile = LittleFS.open("/firmware.json", "w");
+    serializeJson(doc, updateFile);
 }
