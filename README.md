@@ -1,4 +1,4 @@
-# ESmart-IoT [![Build Status](https://travis-ci.org/Edydaoud/ESmart-IoT-Public.svg?branch=sonoff_basic)](https://travis-ci.org/Edydaoud/ESmart-IoT-Public)
+# ESmart-IoT ![Badge](https://github.com/Edydaoud/ESmart-IoT-Public/workflows/PlatformIO%20CI/badge.svg?branch=github-actions)
 
 This project aims to let anyone with basic Arduino knowledge to make a smarter home using [Firebase](http://console.firebase.google.com/), [Platformio IDE](https://platformio.org/platformio-ide), and any supported [ESP8266](https://www.espressif.com/en/products/socs/esp8266/overview) board.
 

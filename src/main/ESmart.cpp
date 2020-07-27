@@ -29,7 +29,7 @@ void connect() {
     WiFi.begin(configs.wifiAp, configs.wifiPass);
     WiFi.setAutoConnect(true);
 
-    INFO("Connecting to: %s\n", configs.wifiAp.c_str());
+    SerialOut::info("Connecting to: %s\n", configs.wifiAp.c_str());
 
     int wifiTimout = 0;
 
@@ -37,34 +37,34 @@ void connect() {
         if (WiFi.status() == WL_CONNECTED) break;
         delay(200);
         wifiTimout++;
-        INFO("Retrying WiFi connection: %d/%d\n\n", wifiTimout, WIFI_TIMEOUT);
+        SerialOut::info("Retrying WiFi connection: %d/%d\n\n", wifiTimout, WIFI_TIMEOUT);
     }
 
-    INFOM("Connected");
+    SerialOut::info("Connected");
 }
 
 /*
     Begin time syncing a initializing firebase and firebase stream
 */
 void begin() {
-    INFOM("Start time syncing");
+    SerialOut::info("Start time syncing");
     timeClient.begin();
     int ntpTimeOut = 0;
 
     while (ntpTimeOut <= NTP_TIMEOUT) {
         if (timeClient.update()) {
             isConnected = true;
-            INFOM("NTP client connected");
+            SerialOut::info("NTP client connected");
             break;
         } else {
-            INFO("Retrying NTP connection: %d/%d\n\n", ntpTimeOut, NTP_TIMEOUT);
+            SerialOut::info("Retrying NTP connection: %d/%d\n\n", ntpTimeOut, NTP_TIMEOUT);
             isConnected = false;
         }
     }
 
     if (isInternetConnected() && !checkForNewVersion()) {
         setTime(timeClient.getEpochTime());
-        INFO("Done syncing, current time: %ld\n\n", timeClient.getEpochTime());
+        SerialOut::info("Done syncing, current time: %ld\n\n", timeClient.getEpochTime());
 
         Firebase.begin(configs.firebaseUrl, configs.firebaseKey);
 
@@ -84,7 +84,7 @@ void begin() {
 
         checkForServerUpdate();
     } else {
-        INFOM("Couldn't connect to internet working in offline mode");
+        SerialOut::info("Couldn't connect to internet working in offline mode");
     }
 }
 
@@ -92,7 +92,7 @@ void begin() {
     Loading configs from file system using LittleFS and parsing json data using ArduinoJson
  */
 bool loadConfigs() {
-    INFOM("Loading configs");
+    SerialOut::info("Loading configs");
 
     if (!beginWrite()) return false;
 
@@ -100,12 +100,12 @@ bool loadConfigs() {
     File localDataFile = LittleFS.open("/data.json", "r");
 
     if (!configFile) {
-        INFOM("Couldn't open config file");
+        SerialOut::info("Couldn't open config file");
         return false;
     }
 
     if (!localDataFile) {
-        INFOM("Couldn't open data file");
+        SerialOut::info("Couldn't open data file");
     }
 
     DynamicJsonDocument configDoc(250);
@@ -115,12 +115,12 @@ bool loadConfigs() {
     auto error2 = deserializeJson(localData, localDataFile);
 
     if (error1) {
-        INFOM("Failed to deserialize config file");
+        SerialOut::info("Failed to deserialize config file");
         return false;
     }
 
     if (error2) {
-        INFOM("Failed to deserialize data file");
+        SerialOut::info("Failed to deserialize data file");
     }
 
     configs = Configs(configDoc);
@@ -129,7 +129,7 @@ bool loadConfigs() {
     configFile.close();
     localDataFile.close();
 
-    INFOM("Config loaded successfuly");
+    SerialOut::info("Config loaded successfuly");
 
     endWrite();
 
@@ -147,7 +147,7 @@ bool loadConfigs() {
  */
 void streamCallback(StreamData data) {
     if (data.dataType() == JSON) {
-        INFO("Data received: %s\n\n", data.jsonString().c_str());
+        SerialOut::info("Data received: %s\n\n", data.jsonString().c_str());
         DynamicJsonDocument object(2048);
         deserializeJson(object, data.jsonString());
         handleReceivedData(object);
@@ -162,7 +162,7 @@ void handleReceivedData(DynamicJsonDocument &document) {
         EsmartFirebase esmartFirebase;
         esmartFirebase.init(document);
 
-        INFO("Handeling server data: %s\n\n", esmartFirebase.toString().c_str());
+        SerialOut::info("Handeling server data: %s\n\n", esmartFirebase.toString().c_str());
 
         writePin(esmartFirebase.pin, esmartFirebase.ledPin, esmartFirebase.state);
 
@@ -177,8 +177,8 @@ void handleReceivedData(DynamicJsonDocument &document) {
             EsmartFirebase esmartFirebase;
             esmartFirebase.init(kv.value());
 
-            INFO("Handeling initial server data: %s\n\n", esmartFirebase.toString().c_str());
-            INFO("Pin state: %d\n\n", readPin(esmartFirebase.pin));
+            SerialOut::info("Handeling initial server data: %s\n\n", esmartFirebase.toString().c_str());
+            SerialOut::info("Pin state: %d\n\n", readPin(esmartFirebase.pin));
 
             if (esmartFirebase.defaultState == -1 && esmartFirebase.relayState != readPin(esmartFirebase.pin)) {
                 writePin(esmartFirebase.pin, esmartFirebase.ledPin, esmartFirebase.state);
@@ -208,7 +208,7 @@ void initLocalData(DynamicJsonDocument &document) {
         EsmartFirebase esmartFirebase;
         esmartFirebase.init(kv.value());
 
-        INFO("Initiatinng initial data: %s\n\n", esmartFirebase.toString().c_str());
+        SerialOut::info("Initiatinng initial data: %s\n\n", esmartFirebase.toString().c_str());
 
         if (esmartFirebase.defaultState == -1) {
             writePin(esmartFirebase.pin, esmartFirebase.ledPin, esmartFirebase.state);
@@ -226,10 +226,10 @@ void initLocalData(DynamicJsonDocument &document) {
 
 void setLocalData(EsmartFirebase &esmart) {
     if (beginWrite()) {
-        INFO("Setting local data: %s\n\n", esmart.toString().c_str());
+        SerialOut::info("Setting local data: %s\n\n", esmart.toString().c_str());
 
         File localDataFile = LittleFS.open("/data.json", "r+");
-        if (!localDataFile) INFOM("Failed to open data file");
+        if (!localDataFile) SerialOut::info("Failed to open data file");
 
         DynamicJsonDocument document(2048);
 
@@ -249,7 +249,7 @@ void setLocalData(EsmartFirebase &esmart) {
 };
 
 void updateNode(EsmartFirebase &esmart) {
-    INFO("Updating node data: %s\n\n", esmart.toString().c_str());
+    SerialOut::info("Updating node data: %s\n\n", esmart.toString().c_str());
 
     if (isInternetConnected()) {
         delay(250);
@@ -262,7 +262,7 @@ void updateNode(EsmartFirebase &esmart) {
 }
 
 void doWork(FutureJob &work) {
-    INFO("Doing local work: %s\n\n", work.esmart.toString().c_str());
+    SerialOut::info("Doing local work: %s\n\n", work.esmart.toString().c_str());
 
     writePin(work.esmart.pin, work.esmart.ledPin, work.esmart.state);
 
@@ -270,12 +270,12 @@ void doWork(FutureJob &work) {
 }
 
 void createButton(EsmartFirebase &esmart) {
-    INFO("Creating button: %s\n\n", esmart.toString().c_str());
+    SerialOut::info("Creating button: %s\n\n", esmart.toString().c_str());
 
     OneButton button(esmart.buttonPin, esmart.buttonState, FutureJob(esmart));
 
     button.attachClick([&](FutureJob &work) {
-        INFO("Triggering on click: %s\n\n", work.esmart.toString().c_str());
+        SerialOut::info("Triggering on click: %s\n\n", work.esmart.toString().c_str());
 
         work.esmart.state = !readPin(work.esmart.pin);
         work.esmart.relayState = work.esmart.state;
@@ -283,7 +283,7 @@ void createButton(EsmartFirebase &esmart) {
         doWork(work);
     });
     button.attachLongPressStop([&](FutureJob &work) {
-        INFO("Triggering on long press stop: %s\n\n", work.esmart.toString().c_str());
+        SerialOut::info("Triggering on long press stop: %s\n\n", work.esmart.toString().c_str());
 
         work.esmart.state = !readPin(work.esmart.pin);
         work.esmart.relayState = work.esmart.state;
@@ -293,7 +293,7 @@ void createButton(EsmartFirebase &esmart) {
         longPressReset = 0;
     });
     button.attachDuringLongPress([&](FutureJob &work) {
-        INFO("Triggering on long press: %s\n\n", work.esmart.toString().c_str());
+        SerialOut::info("Triggering on long press: %s\n\n", work.esmart.toString().c_str());
 
         if (longPressReset == 0) {
             longPressReset = millis();
@@ -314,13 +314,13 @@ void createOffAlarm(EsmartFirebase &esmart) {
 
     if (Alarm.isAllocated(esmart.pin + 1)) {
         if (offTime != 0) {
-            INFO("Updating off alarm: %s\n\n", esmart.toString().c_str());
+            SerialOut::info("Updating off alarm: %s\n\n", esmart.toString().c_str());
 
             tmElements_t element;
             breakTime(offTime, element);
             Alarm.write(esmart.pin + 1, AlarmHMS(element.Hour, element.Minute, element.Second));
         } else {
-            INFO("Deleting off alarm: %s\n\n", esmart.toString().c_str());
+            SerialOut::info("Deleting off alarm: %s\n\n", esmart.toString().c_str());
 
             Alarm.free(esmart.pin + 1);
         }
@@ -328,10 +328,10 @@ void createOffAlarm(EsmartFirebase &esmart) {
         tmElements_t element;
         breakTime(offTime, element);
         FutureJob work = FutureJob(esmart);
-        INFO("Creating off alarm: %s\n\n", esmart.toString().c_str());
+        SerialOut::info("Creating off alarm: %s\n\n", esmart.toString().c_str());
 
         Alarm.alarmRepeat(element.Hour, element.Minute, element.Second, esmart.pin + 1, work, [&](FutureJob work) {
-            INFO("Triggering off alarm: %s\n\n", esmart.toString().c_str());
+            SerialOut::info("Triggering off alarm: %s\n\n", esmart.toString().c_str());
 
             work.esmart.state = !readPin(work.esmart.pin);
             work.esmart.relayState = !readPin(work.esmart.pin);
@@ -345,23 +345,23 @@ void createOnAlarm(EsmartFirebase &esmart) {
 
     if (Alarm.isAllocated(esmart.pin)) {
         if (onTime != 0) {
-            INFO("Updating on alarm: %s\n\n", esmart.toString().c_str());
+            SerialOut::info("Updating on alarm: %s\n\n", esmart.toString().c_str());
             tmElements_t element;
             breakTime(onTime, element);
             Alarm.write(esmart.pin, AlarmHMS(element.Hour, element.Minute, element.Second));
         } else {
-            INFO("Deleting on alarm: %s\n\n", esmart.toString().c_str());
+            SerialOut::info("Deleting on alarm: %s\n\n", esmart.toString().c_str());
             Alarm.free(esmart.pin);
         }
     } else if (onTime > 0) {
-        INFO("Creating on alarm: %s\n\n", esmart.toString().c_str());
+        SerialOut::info("Creating on alarm: %s\n\n", esmart.toString().c_str());
 
         tmElements_t element;
         breakTime(onTime, element);
         FutureJob work = FutureJob(esmart);
 
         Alarm.alarmRepeat(element.Hour, element.Minute, element.Second, esmart.pin, work, [&](FutureJob work) {
-            INFO("Triggering on alarm: %s\n\n", esmart.toString().c_str());
+            SerialOut::info("Triggering on alarm: %s\n\n", esmart.toString().c_str());
 
             work.esmart.state = !readPin(work.esmart.pin);
             work.esmart.relayState = !readPin(work.esmart.pin);
@@ -372,13 +372,13 @@ void createOnAlarm(EsmartFirebase &esmart) {
 
 int readPin(int pin) {
     int val = digitalRead(pin) ^ READ_OPERATOR;
-    INFO("Reading pin %d value %d and new val %d\n\n", pin, digitalRead(pin), val);
+    SerialOut::info("Reading pin %d value %d and new val %d\n\n", pin, digitalRead(pin), val);
     return val;
 }
 
 void writePin(int pin, int statusPin, int val) {
     int newVal = val ^ WRITE_OPERATOR;
-    INFO("Writing to pin %d new value %d and val %d\n\n", pin, val, newVal);
+    SerialOut::info("Writing to pin %d new value %d and val %d\n\n", pin, val, newVal);
     digitalWrite(pin, newVal);
     digitalWrite(statusPin, val);
 }
@@ -391,13 +391,13 @@ void checkForServerUpdate() {
 void handleUpdate(String jsonStr) {
     DynamicJsonDocument doc(250);
     deserializeJson(doc, jsonStr);
-    INFO("Handeling update data %s\n\n", jsonStr.c_str());
+    SerialOut::info("Handeling update data %s\n\n", jsonStr.c_str());
     UpdateConfig config = UpdateConfig(doc);
     saveUpdates(doc);
 }
 
 bool checkForNewVersion() {
-    INFOM("Checking for new version\n\n");
+    SerialOut::info("Checking for new version\n\n");
 
     if (!beginWrite()) return false;
 
@@ -407,35 +407,35 @@ bool checkForNewVersion() {
     UpdateConfig config = UpdateConfig(doc);
 
     if (VERSION < config.version) {
-        INFO("New version found: old version %d new version %d\n\n", VERSION, config.version);
+        SerialOut::info("New version found: old version %d new version %d\n\n", VERSION, config.version);
         startUpdate(config);
         return true;
     } else {
-        INFOM("No new version found\n");
+        SerialOut::info("No new version found\n");
         return false;
     }
 }
 
 void startUpdate(UpdateConfig &config) {
-    INFOM("Starting update\n\n");
+    SerialOut::info("Starting update\n\n");
 
     BearSSL::WiFiClientSecure client;
     client.setInsecure();
     client.setTimeout(5000);
 
     if (!client.connect(config.host, httpsPort)) {
-        INFO("Could not connect to %s\n\n", config.getUpdateUrl().c_str());
+        SerialOut::info("Could not connect to %s\n\n", config.getUpdateUrl().c_str());
         return;
     } else {
-        INFO("Connected successfully to %s\n\n", config.getUpdateUrl().c_str());
+        SerialOut::info("Connected successfully to %s\n\n", config.getUpdateUrl().c_str());
     }
 
     auto ret = ESPhttpUpdate.update(client, config.getUpdateUrl());
 
     if (ret == HTTP_UPDATE_FAILED) {
-        INFOM("Update failed\n");
+        SerialOut::info("Update failed\n");
     } else if (ret == HTTP_UPDATE_OK) {
-        INFOM("Update success, rebooting\n");
+        SerialOut::info("Update success, rebooting\n");
     }
 }
 

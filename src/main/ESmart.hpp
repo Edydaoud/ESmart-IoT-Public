@@ -8,10 +8,10 @@
 #include <OneButton.h>
 #include <TimeAlarms.h>
 #include <WiFiUdp.h>
-
 #include <FutureJob.hpp>
 
 #include "EsmartFirebase.hpp"
+#include "SerialOut.hpp"
 
 #define JSON "json"
 #define STATE "state"
@@ -19,14 +19,8 @@
 #define NEUTRE -1
 #define WIFI_TIMEOUT 50
 #define NTP_TIMEOUT 5
-
-#ifdef DEBUG_ESMART
-#define INFO(fmt, ...) Serial.printf(fmt, __VA_ARGS__)
-#define INFOM(...) Serial.println(F(__VA_ARGS__))
-#else
-#define INFO(fmt, ...)
-#define INFOM(...)
-#endif
+#define VERSION 2
+#define FIRMWARE_PATH "/firmware/"
 
 #ifdef INVERTED_PINS
 #define WRITE_OPERATOR 1
@@ -35,9 +29,6 @@
 #define WRITE_OPERATOR 0
 #define READ_OPERATOR 0
 #endif
-
-#define VERSION 2
-#define FIRMWARE_PATH "/firmware/"
 
 class UpdateConfig {
    public:
