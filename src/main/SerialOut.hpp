@@ -12,7 +12,7 @@ struct SerialHelper<std::string> {
 class SerialOut {
    public:
     template <class... Ts>
-    static void info(const char* msg, Ts... args) { printf(msg + '\n\n', SerialHelper<Ts>::raw(args)...); }
+    static void info(const char* msg, Ts... args) { printf(msg, SerialHelper<Ts>::raw(args)...); }
 };
 #else
 class SerialOut {

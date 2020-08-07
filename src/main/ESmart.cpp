@@ -5,9 +5,10 @@
  */
 void setup() {
     Serial.begin(115200);
+
     if (loadConfigs()) {
         connect();
-        delay(200);
+        initTime();
         begin();
     }
 }
@@ -16,10 +17,16 @@ void setup() {
     handling buttons and alarms
 */
 void loop() {
+    if (isInternetConnected()) Alarm.delay(0);
+
     for (size_t i = 0; i < buttons.size(); i++) {
         buttons[i].tick();
     }
-    if (isInternetConnected()) Alarm.delay(0);
+
+    if (millis() - lastTimeUpdate >= UPDATE_TIME_INTERVAL) {
+        lastTimeUpdate = millis();
+        updateTime();
+    }
 }
 
 /* 
@@ -29,9 +36,9 @@ void connect() {
     WiFi.begin(configs.wifiAp, configs.wifiPass);
     WiFi.setAutoConnect(true);
 
-    SerialOut::info("Connecting to: %s\n", configs.wifiAp.c_str());
+    SerialOut::info("Connecting to: %s\n\n", configs.wifiAp.c_str());
 
-    int wifiTimout = 0;
+    int wifiTimout = 1;
 
     while (wifiTimout <= WIFI_TIMEOUT) {
         if (WiFi.status() == WL_CONNECTED) break;
@@ -40,36 +47,42 @@ void connect() {
         SerialOut::info("Retrying WiFi connection: %d/%d\n\n", wifiTimout, WIFI_TIMEOUT);
     }
 
-    SerialOut::info("Connected");
+    SerialOut::info("Connected\n\n");
+}
+
+void initTime() {
+    SerialOut::info("Start time syncing\n\n");
+
+    timeClient.setUpdateInterval(55000);
+    timeClient.begin();
+
+    int ntpTimeOut = 1;
+
+    while (ntpTimeOut <= NTP_TIMEOUT) {
+        if (timeClient.update()) {
+            isConnected = true;
+            SerialOut::info("NTP client connected\n\n");
+            break;
+        } else {
+            SerialOut::info("Retrying NTP connection: %d/%d\n\n", ntpTimeOut, NTP_TIMEOUT);
+            isConnected = false;
+        }
+        ntpTimeOut++;
+    }
 }
 
 /*
     Begin time syncing a initializing firebase and firebase stream
 */
 void begin() {
-    SerialOut::info("Start time syncing");
-    timeClient.begin();
-    int ntpTimeOut = 0;
-
-    while (ntpTimeOut <= NTP_TIMEOUT) {
-        if (timeClient.update()) {
-            isConnected = true;
-            SerialOut::info("NTP client connected");
-            break;
-        } else {
-            SerialOut::info("Retrying NTP connection: %d/%d\n\n", ntpTimeOut, NTP_TIMEOUT);
-            isConnected = false;
-        }
-    }
-
-    if (isInternetConnected() && !checkForNewVersion()) {
+    if (isNtpClientConnected() && !checkForNewVersion()) {
         setTime(timeClient.getEpochTime());
         SerialOut::info("Done syncing, current time: %ld\n\n", timeClient.getEpochTime());
 
         Firebase.begin(configs.firebaseUrl, configs.firebaseKey);
 
-        Firebase.setMaxRetry(firebaseJobData, 5);
-        Firebase.setMaxErrorQueue(firebaseJobData, 10);
+        Firebase.setMaxRetry(firebaseJobData, 2);
+        Firebase.setMaxErrorQueue(firebaseJobData, 2);
         Firebase.setMaxRetry(firebaseStreamData, 5);
         Firebase.setMaxErrorQueue(firebaseStreamData, 10);
 
@@ -83,8 +96,39 @@ void begin() {
         Firebase.setStreamCallback(firebaseStreamData, streamCallback);
 
         checkForServerUpdate();
+
     } else {
-        SerialOut::info("Couldn't connect to internet working in offline mode");
+        SerialOut::info("Couldn't connect to internet working in offline mode\n\n");
+    }
+}
+
+void updateTime() {
+    SerialOut::info("Updating time\n\n");
+
+    if (timeClient.update()) {
+        SerialOut::info("Time updated\n\n");
+
+        if (!isConnected) {
+            SerialOut::info("Wasn't connected, reinitializing firebase\n\n");
+            isConnected = true;
+            shouldSyncDataWithServer = true;
+            begin();
+        } else {
+            shouldSyncDataWithServer = false;
+            SerialOut::info("Already connected, updating time only\n\n");
+        }
+
+    } else {
+        SerialOut::info("Couldn't connect to ntp server while updating time\n\n");
+        if (!firebaseStreamData.httpConnected()) {
+            SerialOut::info("Firebase not connected, reseting stream\n\n");
+
+            Firebase.endStream(firebaseStreamData);
+            Firebase.setStreamCallback(firebaseStreamData, nullptr);
+        } else
+            SerialOut::info("Firebase is connected while ntp is not, leaving firebase as is\n\n");
+
+        isConnected = false;
     }
 }
 
@@ -92,7 +136,7 @@ void begin() {
     Loading configs from file system using LittleFS and parsing json data using ArduinoJson
  */
 bool loadConfigs() {
-    SerialOut::info("Loading configs");
+    SerialOut::info("Loading configs\n\n");
 
     if (!beginWrite()) return false;
 
@@ -100,12 +144,12 @@ bool loadConfigs() {
     File localDataFile = LittleFS.open("/data.json", "r");
 
     if (!configFile) {
-        SerialOut::info("Couldn't open config file");
+        SerialOut::info("Couldn't open config file\n\n");
         return false;
     }
 
     if (!localDataFile) {
-        SerialOut::info("Couldn't open data file");
+        SerialOut::info("Couldn't open data file\n\n");
     }
 
     DynamicJsonDocument configDoc(250);
@@ -115,12 +159,12 @@ bool loadConfigs() {
     auto error2 = deserializeJson(localData, localDataFile);
 
     if (error1) {
-        SerialOut::info("Failed to deserialize config file");
+        SerialOut::info("Failed to deserialize config file\n\n");
         return false;
     }
 
     if (error2) {
-        SerialOut::info("Failed to deserialize data file");
+        SerialOut::info("Failed to deserialize data file\n\n");
     }
 
     configs = Configs(configDoc);
@@ -129,7 +173,7 @@ bool loadConfigs() {
     configFile.close();
     localDataFile.close();
 
-    SerialOut::info("Config loaded successfuly");
+    SerialOut::info("Config loaded successfuly\n\n");
 
     endWrite();
 
@@ -181,13 +225,16 @@ void handleReceivedData(DynamicJsonDocument &document) {
             SerialOut::info("Pin state: %d\n\n", readPin(esmartFirebase.pin));
 
             if (esmartFirebase.defaultState == -1 && esmartFirebase.relayState != readPin(esmartFirebase.pin)) {
-                writePin(esmartFirebase.pin, esmartFirebase.ledPin, esmartFirebase.state);
+                if (!shouldSyncDataWithServer)
+                    writePin(esmartFirebase.pin, esmartFirebase.ledPin, esmartFirebase.state);
+                else
+                    esmartFirebase.state = readPin(esmartFirebase.pin);
 
                 esmartFirebase.relayState = readPin(esmartFirebase.pin);
 
                 updateNode(esmartFirebase);
             } else if (esmartFirebase.defaultState != -1 && esmartFirebase.defaultState != esmartFirebase.relayState) {
-                writePin(esmartFirebase.pin, esmartFirebase.ledPin, esmartFirebase.defaultState);
+                if (!shouldSyncDataWithServer) writePin(esmartFirebase.pin, esmartFirebase.ledPin, esmartFirebase.defaultState);
 
                 esmartFirebase.relayState = readPin(esmartFirebase.pin);
                 esmartFirebase.state = readPin(esmartFirebase.pin);
@@ -252,12 +299,10 @@ void updateNode(EsmartFirebase &esmart) {
     SerialOut::info("Updating node data: %s\n\n", esmart.toString().c_str());
 
     if (isInternetConnected()) {
-        delay(250);
         FirebaseJson json = esmart.getFirebaseJson();
         Firebase.updateNode(firebaseJobData, configs.getUserPath(esmart.id), json);
     }
 
-    delay(250);
     setLocalData(esmart);
 }
 
@@ -435,7 +480,7 @@ void startUpdate(UpdateConfig &config) {
     if (ret == HTTP_UPDATE_FAILED) {
         SerialOut::info("Update failed\n");
     } else if (ret == HTTP_UPDATE_OK) {
-        SerialOut::info("Update success, rebooting\n");
+        SerialOut::info("Update success, rebooting\n\n");
     }
 }
 

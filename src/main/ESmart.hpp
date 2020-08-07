@@ -8,6 +8,7 @@
 #include <OneButton.h>
 #include <TimeAlarms.h>
 #include <WiFiUdp.h>
+
 #include <FutureJob.hpp>
 
 #include "EsmartFirebase.hpp"
@@ -18,8 +19,11 @@
 #define RELAY_STATE "relayState"
 #define NEUTRE -1
 #define WIFI_TIMEOUT 50
-#define NTP_TIMEOUT 5
-#define VERSION 2
+#define NTP_TIMEOUT 3
+#define UPDATE_TIME_INTERVAL 60000UL
+
+#define VERSION 3
+
 #define FIRMWARE_PATH "/firmware/"
 
 #ifdef INVERTED_PINS
@@ -91,6 +95,10 @@ FirebaseData firebaseStreamData;
 FirebaseData firebaseJobData;
 
 int longPressReset;
+
+unsigned long lastTimeUpdate = 0;
+
+bool shouldSyncDataWithServer = false;
 bool isConnected = false;
 
 std::vector<OneButton> buttons;
@@ -100,7 +108,9 @@ const int16_t httpsPort = 443;
 void loop();
 void setup();
 
+void initTime();
 bool loadConfigs();
+void updateTime();
 void connect();
 void begin();
 void initLocalData(DynamicJsonDocument &document);
@@ -124,7 +134,8 @@ void createAlarms(EsmartFirebase &esmart);
 int readPin(int pin);
 void writePin(int pin, int statusPin, int val);
 
-bool isInternetConnected() { return isConnected && WiFi.status() == WL_CONNECTED; }
+bool isInternetConnected() { return isConnected && WiFi.status() == WL_CONNECTED && firebaseStreamData.httpConnected(); }
+bool isNtpClientConnected() { return isConnected && WiFi.status() == WL_CONNECTED; }
 
 void startUpdate(UpdateConfig &config);
 void saveUpdates(DynamicJsonDocument &doc);
